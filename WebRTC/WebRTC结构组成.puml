@@ -1,0 +1,136 @@
+
+
+@startmindmap
+
+' https://plantuml.com/zh/
+
+<style>
+' mindmapDiagram {
+'   BackgroundColor white
+'   LineColor black
+'   RoundCorner 10
+'   FontColor #555
+' }
+</style>
+
+' caption figure 1
+title WebRTC结构组成
+
+
+* WebRTC结构组成
+** 协议
+*** sdp
+**** plan B
+**** unified plan
+*** ice
+**** stun
+***** ice 建连时
+***** ice 不稳定时
+***** ice 稳定时
+***** ice超时时间
+**** ice state change
+*** dtls
+**** peerconnection state change
+**** dtls 丢包重发策略
+*** rtp
+**** rtp协议格式
+**** vp8打包
+**** h264打包
+***** signal nalu
+***** fu*a
+***** stap*a
+**** vp9 打包
+**** av1 打包
+*** rtcp
+**** 200 send report
+**** 201 receiver report
+**** 202 sdes
+**** 203 bye
+**** 204 app
+**** 205 rtpfb
+***** nack
+***** tmmbr
+***** tmmbn
+***** transport feedback
+**** 206 ps(Payload*specific)fb
+***** pli
+***** fir
+**** 207 Xr
+** 音频
+*** ADM(音频设备管理)
+**** windows
+**** mac/ios
+**** android
+*** netEQ
+**** 音频jitterbuffer
+**** MCU模块
+**** DSP模块
+***** 加速
+***** 减速
+***** 丢包补偿
+***** 融合
+*** 3A算法
+**** AEC
+***** AECM
+***** AEC3
+**** ANS
+**** AGC
+*** 混音
+**** 重采样
+**** 能量排序
+**** 平滑过度
+*** 编码
+**** opus
+
+left side
+
+** 视频
+*** 视频采集
+**** windows
+***** dshow
+**** mac/ios
+**** android
+*** rtp打包
+*** rtp解包
+*** 组帧
+**** 一个slice组帧
+**** 多slice组帧
+*** jitterbuffer
+*** 丢帧策略
+*** 编码
+**** openh264
+**** vp8
+**** vp9
+** QOS
+*** goog*remb
+*** FEC
+**** ulp*fec
+**** flex*fec
+*** nack
+*** svc
+*** gcc
+**** send_side_bandwidth_estimator
+**** trendline_estimator
+**** delay_based_bwe
+**** probe_bitrate_estimator
+**** probe_controller
+**** aimd
+**** overuse_detector
+**** overuse_estimator
+*** bbr
+**** start_up
+**** drain
+**** probe_bw
+**** probe_rtt
+*** pcc
+** 工程方面
+*** 三大线程
+**** signal 线程
+**** work 线程
+**** network 线程
+*** 音视频同步
+*** pacing
+*** 播放delay
+*** 网络拥塞时，降分辨率和FPS策略
+
+@endmindmap

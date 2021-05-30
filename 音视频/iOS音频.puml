@@ -1,0 +1,175 @@
+
+
+@startmindmap
+
+<style>
+mindmapDiagram {
+  BackgroundColor white
+  LineColor black
+  RoundCorner 10
+  FontColor #555
+}
+</style>
+
+title iOS音频
+
+* 音频
+
+** 前言
+*** 采样和采样率
+**** sample 是一个声道的一个采样。采样率定义了每秒从连续信号中提取并组成离散信号的采样个数，它用赫兹（Hz）来表示。
+*** frame
+**** frame 是最小单位时间点包含的一个或多个声音采样，最小单位时间点取决于声音采样设备，是一个时间点多个采样的集合。譬如，双声道的音频文件，一个时间点有两个声道，一个Frames就包括两个采样。通道是声音的通道的数目。常有单声道和立体声之分。
+*** 采样位数
+**** 即采样值或取样值（就是将采样样本幅度量化）。它是用来衡量声音波动变化的一个参数，也可以说是声卡的分辨率。它的数值越大，分辨率也就越高，所发出声音的能力越强。每个采样数据记录的是振幅, 采样精度取决于采样位数的大小
+*** packet
+**** 是一个或多个 frame 的集合，一个 packet 包含多少个 frame，是由声音文件格式决定的。譬如 PCM 文件格式中一个 packet 包含 1 个frame。而 MP3 文件格式中一个 packet 包含 1152 个frames。
+*** 比特率
+**** 也称作位速/码率，是指在一个数据流中每秒钟能通过的信息量 比特率=采样频率×采样位数×声道数
+*** AudioToolbox
+**** 基于C
+**** OSStatus AudioToolbox 函数的返回一般都是OSStatus 成功返回“noErr”
+*** Magic Cookie
+**** 一些音频压缩的音频格式，例如 MPEG 4 AAC，利用结构体包含音频的元数据。这些结构体就是Magic Cookie，当你用 Audio Queue Services 播放这种格式的音频文件时，你可以从音频文件中获取Magic Cookie ，然后在播放之前添加到音频队列中
+' <code>
+' UInt32 cookieSize = sizeof (UInt32);
+' status = AudioFileGetPropertyInfo (audioFileID,kAudioFilePropertyMagicCookieData,&cookieSize,NULL);
+' if (!status && cookieSize) {
+'     char** magicCookie =(char *) malloc (cookieSize);
+'     AudioFileGetProperty (audioFileID,kAudioFilePropertyMagicCookieData,&cookieSize,magicCookie);
+'     AudioQueueSetProperty (inAQ,kAudioQueueProperty_MagicCookie,magicCookie,cookieSize);
+'     free (magicCookie);
+' }
+' </code>
+
+** 音频文件转换
+*** 打开和关闭音频数据
+**** 方法
+***** ExtAudioFileOpenURL 打开文件
+***** ExtAudioFileDispose 当操作完以后，通过Dispose来回收资源，区分于其他的Close:
+*** 读/写音频属性
+**** 属性值
+***** kExtAudioFileProperty_FileDataFormat	源音频数据的格式	AudioStreamBasicDescription	只读 
+***** kExtAudioFileProperty_FileChannelLayout	源音频数据的通道格式	AudioChannelLayout	读写 
+***** kExtAudioFileProperty_ClientDataFormat	读出来后的音频数据的格式	AudioStreamBasicDescription	读写 
+***** kExtAudioFileProperty_ClientChannelLayout	读出来后的音频数据的通道格式	AudioChannelLayout	读写 
+***** kExtAudioFileProperty_CodecManufacturer	是否使用硬件编解码	UInt32（kAppleHardwareAudioCodecManufacturer or kAppleSoftwareAudioCodecManufacturer）	读写 
+***** kExtAudioFileProperty_AudioConverter	指定的编解码工具	AudioConverterRef 只读 
+***** kExtAudioFileProperty_AudioFile	对应的AudioFileID	AudioFileID	只读 
+***** kExtAudioFileProperty_FileMaxPacketSize	源音频数据最大的Packet大小	Uint32	只读 
+***** kExtAudioFileProperty_ClientMaxPacketSize	读出后音频数据最大的Packet大小	Uint32	只读 
+***** kExtAudioFileProperty_FileLengthFrames	帧数 SInt64	只读 
+***** kExtAudioFileProperty_ConverterConfig	指定编解码器	CFArray	读写 kExtAudioFileProperty_IOBufferSizeBytes	编解码使用的缓冲区大小	UInt32	读写 
+***** kExtAudioFileProperty_IOBuffer	编解码使用的缓冲区	void *	读写 kExtAudioFileProperty_PacketTable	设置PacketTable	AudioFilePacketTableInfo	读写
+**** 方法
+***** ExtAudioFileGetPropertyInfo
+****** Ext接口提供的属性操作也是分为两步，先获取属性基本信息，如大小
+***** ExtAudioFileGetProperty
+****** 然后在获得属性内容
+***** ExtAudioFileSetProperty
+****** 设置属性内容
+*** 写入/读取音频数据
+**** 方法
+***** ExtAudioFileWrite
+***** ExtAudioFileWriteAsync 同时写入还有个非阻塞的版本
+***** ExtAudioFileDispose
+
+** 音频队列
+*** 初始化Audio Queue
+**** AudioQueueNewOutput
+*** 创建buffer
+**** AudioQueueAllocateBuffer
+***** 参数
+****** AudioQueueRef 创建的AudioQueue
+****** inBufferByteSize buffer的大小
+****** AudioQueueBufferRef 返回当前创建的buffer实例。
+*** 将buffer放入音频队列
+**** AudioQueueEnqueueBuffer
+***** 参数
+
+** 音频文件
+*** 1.打开或关闭音频文件
+**** AudioFileOpenURL
+***** 参数
+****** CFURLRef 文件路径
+****** AudioFilePermissions 文件读写权限 一般设置可读模式；
+****** inFileTypeHint 文件类型提示 未知设置0；
+****** AudioFileID 文件句柄
+**** AudioFileClose
+*** 2.读/写音频属性
+**** 方法
+***** AudioFileGetPropertyInfo 获得属性的总体的大小和属性是否可以修改
+***** AudioFileGetProperty 在获得属性的具体内容
+***** AudioFileSetProperty 对于isWritable为true的对其进行设置属性
+**** 属性值
+***** kAudioFilePropertyFileFormat 音频文件的格式 char *
+***** kAudioFilePropertyDataFormat 音频数据格式 AudioStreamPacketDescription
+***** kAudioFilePropertyIsOptimized 是否可以优化 0/1
+***** kAudioFilePropertyMagicCookieData Magic Cookie文件头 char *
+***** kAudioFilePropertyAudioDataByteCount 文件长度 Uint64
+***** kAudioFilePropertyAudioDataPacketCount Packet的数目 Uint64
+***** kAudioFilePropertyMaximumPacketSize 最大的Packet大小 Uint32
+***** kAudioFilePropertyDataOffset 数据的偏移量 Uint64
+***** kAudioFilePropertyChannelLayout 声道结构 AudioFormatListItem
+***** kAudioFilePropertyDeferSizeUpdates 是否更新文件头信息 1/0
+***** kAudioFilePropertyMarkerList 音频中所有markers CFStringRef表示的Markers列表
+***** kAudioFilePropertyRegionList 音频中所有Region CFStringRef表示的Region列表
+***** kAudioFilePropertyPacketToFrame 将包数转换成帧数 AudioFramePacketTranslation中mPacket做输入，mFrame做输出
+***** kAudioFilePropertyFrameToPacket 将帧数转换成包数 AudioFramePacketTranslation中mFrame做输入，mFrameOffsetInPacket，mPacket做输出
+***** kAudioFilePropertyPacketToByte 将包数转换成字节数 AudioFramePacketTranslation中mPacket做输入，mByte做输出
+***** kAudioFilePropertyByteToPacket 将字节数转换成包数 AudioFramePacketTranslation中mByte做输入，mPacket和mByteOffsetInPacket做输出
+***** kAudioFilePropertyChunkIDs 文件中的chunk编码格式 4字符编码格式数组
+***** kAudioFilePropertyInfoDictionary 字典表示的Info CFDictionary
+***** kAudioFilePropertyPacketTableInfo 设置PacketTableInfo PacketTableInfo
+***** kAudioFilePropertyFormatList 支持的格式列表 编码格式list
+***** kAudioFilePropertyPacketSizeUpperBound 理论上的最大Packet大小 Uint64
+***** kAudioFilePropertyReserveDuration 设置写保护区大小，单位为秒 Uint32
+***** kAudioFilePropertyEstimatedDuration 估算的音频时长 ， 单位秒 Uint32
+***** kAudioFilePropertyBitRate 码率 Uint32
+***** kAudioFilePropertyID3Tag ID3 tag void *
+***** kAudioFilePropertySourceBitDepth 位深度 Uint32
+***** kAudioFilePropertyAlbumArtwork 专辑名 CFDataRef
+*** 3.读取音频数据
+**** 方法
+***** udioFileReadBytes
+****** AudioFileReadPacketData
+******* 参数
+********* inAudioFile 文件句柄
+********* inUseCache 是否缓存读取的数据
+********* outNumBytes 最终读到数据的大小
+********* outPacketDescriptions 一个存放AudioStreamPacketDescription的Buffer
+********* inStartingPacket 起始的Packet
+********* ioNumPackets 当输入时表示要读取的Packet数目，输出时表示最终读入的Packet数目
+********* outBuffer 数据读到的具体buffer位置
+****** AudioFileReadPackets
+
+** 音频流
+*** 初始化音频流
+**** 方法
+***** AudioFileStreamOpen
+****** 参数
+******* inClientData 上下文对象
+******* AudioFileStream_PropertyListenerProc 在调用AudioFileStreamParseBytes歌曲信息的回调；
+******* AudioFileStream_PacketsProc 在调用AudioFileStreamParseBytes对音频数据的回调，主要用于音频帧的数据分类存储
+******* AudioFileTypeID 文件类型的提示，如果无法确定类型可以传入0
+******* AudioFileStreamID 获取当前实例对应的AudioFileStreamID，使用其他AudioFileStream API需要传入。
+*** 读取音频流
+**** AudioFileStreamParseBytes
+***** 参数
+****** AudioFileStreamID AudioFileStreamOpen获取的的AudioFileStreamID
+****** inDataByteSize 解析的数据字节长度
+****** inData 解析的数据
+****** AudioFileStreamParseFlags 说本次的解析和上一次解析是否是连续的关系，如果是连续的传入0，否则传kAudioFileStreamParseFlag_Discontinuity。
+*** 解析文件格式信息
+**** AudioFileStream_PropertyListenerProc
+**** AudioFileStreamGetProperty
+**** AudioFileStream_PacketsProc
+***** 参数
+****** inClientData 上下文对象
+****** inumberOfBytes 读取的数据长度
+****** inumberOfPackets 读取的数据帧数量
+****** inInputData 读取的数据字节
+****** AudioStreamPacketDescription AudioStreamPacketDescription类型的数组，存储了当前帧数据的偏移量和大小
+
+
+@endmindmap
